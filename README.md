@@ -2,12 +2,12 @@
 
 ## Conversion
 
-[Link](conversion/README.md) Conversion scripts between filetypes.
+[Link](conversion) Conversion scripts between filetypes.
 
 ## Dataset
 
-[Link](dataset/README.md) Scripts to transform | organize datasets.
+[Link](dataset) Scripts to transform | organize datasets.
 
 ## Plot
 
-[Link](plot/README.md) Scripts to visualize data with beautiful graphs.
+[Link](plot) Scripts to visualize data with beautiful graphs.
