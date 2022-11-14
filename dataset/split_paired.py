@@ -16,6 +16,8 @@ Assuming there are:
     ~/source/DB/train/masks/
     ~/source/DB/val/images/
     ~/source/DB/val/masks/
+
+TODO: Use pathlib
 """
 
 
