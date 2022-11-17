@@ -1,68 +1,68 @@
 """
-TODO Document this script
-TODO Adapt so this can work with any model
+Script to load the training log.csv and plot the metrics
+
+TODO make this script more general
 """
 
-
-import pandas as pd
 import argparse
-import numpy as np
 from pathlib import Path
+import pandas as PD
+import seaborn as SBN
 import  matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def arg_parse():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--input', type=str, required=True,
-            help='Path to the UNEXT model folder.')
+    parser.add_argument('--csv', type=str, required=True,
+            help='Path to the .csv log')
+
+    parser.add_argument('--out', type=str, required=True,
+            help='Output plot folder')
+
+    parser.add_argument('--experiment', type=str, required=False,
+                        default='', help='Experiment name')
 
     return parser.parse_args()
 
 
-def load_all_csv(csv_home_path: str, val_losses, val_ious, val_dices):
+def load_csv(file_path: str):
+    df = None
 
-    print(csv_home_path, str(Path(csv_home_path).glob('*/*.csv')))
-    paths = sorted(Path(csv_home_path).glob('*/*.csv'))
-    print(paths)
-    for idx, file in enumerate(paths):
-        print('Loading', file)
-        df = pd.read_csv(file)
-        val_losses.append(df['val_loss'].to_numpy())
-        val_ious.append(df['val_iou'].to_numpy())
-        val_dices.append(df['val_dice'].to_numpy())
+    try:
+        df = PD.read_csv(file_path)
+    except:
+        print('Could not read CSV file')
+        exit()
+
+    return df
 
 
-def plot_graphs(experiment_list, file_name):
+def plot_line_graph(csv, train, val, args):
+    SBN.set_theme()
+    plot = None
 
-    sns.set_theme()
-    p = None
-    for idx, experiment in enumerate(experiment_list):
-        print(idx)
-        p = sns.relplot(data=experiment, kind='line')
-        plt.ylim((0, 1))
-        plt.savefig('/home/leite/workspace/deep_learning/utils/{}_{}.png'.format(file_name, idx))
+    plot = SBN.relplot(
+            data=(csv[train], csv[val]),
+            kind='line',
+            dashes=False,
+            legend=False)
+    plot.set(title=args.experiment, xlabel='Epoch', ylabel=train)
+    plt.legend(labels=['Train', 'Validation'])
+    plt.ylim((0, 1))
+
+    file_name = args.experiment +'_'+ train + '.png'
+    plt.savefig(Path(args.out, file_name), bbox_inches='tight')
 
 
 def main():
     args = arg_parse()
 
-    val_losses = []
-    val_ious = []
-    val_dices = []
+    csv = load_csv(args.csv)
 
-    load_all_csv(args.input, val_losses, val_ious, val_dices)
+    plot_line_graph(csv, 'loss', 'val_loss', args)
+    plot_line_graph(csv, 'iou', 'val_iou', args)
 
-    print('Loaded csv:', len(val_losses))
-    plot_graphs(val_losses, '1_isic_loss')
-    # plot_graphs(val_dices, 'dice_isic')
-
-    # plot_graphs(val_losses[:10], 'loss_busi')
-    # plot_graphs(val_losses[10:], 'loss_isic')
-
-    # plot_graphs(val_ious[:10], 'iou_busi')
-    # plot_graphs(val_ious[10:], 'iou_isic')
 
 if __name__ == "__main__":
     main()
