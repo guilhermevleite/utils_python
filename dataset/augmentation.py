@@ -26,7 +26,7 @@ def arg_parse() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_image(img_path: Path, size: int) -> np.ndarray:
+def load_image(img_path: Path) -> np.ndarray:
     '''
     Returns image loaded from img_path, also resizes to size. If
     load fails, returns black image.
@@ -35,7 +35,7 @@ def load_image(img_path: Path, size: int) -> np.ndarray:
     image = cv.imread(str(img_path))
 
     if image is None:
-        image = np.zeros((size, size), dtype='uint8')
+        image = np.zeros((128, 128), dtype='uint8')
 
     return image
 
@@ -58,6 +58,11 @@ def augmentation_pipeline(image: np.ndarray, mask: np.ndarray) -> tuple:
     img_aug_lst.append(img)
     msk_aug_lst.append(mask)
     suffix_lst.append('BGT')
+
+    img = aug_list.rdn_blur(image)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(mask)
+    suffix_lst.append('BLUR')
 
     # Mask SENSITIVE augmentations
 
@@ -91,11 +96,15 @@ def augmentation_pipeline(image: np.ndarray, mask: np.ndarray) -> tuple:
     msk_aug_lst.append(msk)
     suffix_lst.append('HFLIP')
 
+    img, msk = aug_list.rdn_crop(image, mask)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(msk)
+    suffix_lst.append('CROP')
 
     return img_aug_lst, msk_aug_lst, suffix_lst
 
 
-def save_images(folder: Path, ori_name: str, img_list: list, msk_list: list, suffix_lst: list) -> None:
+def save_images(folder: Path, ori_name: str, img_list: list, msk_list: list, out_size: int, suffix_lst: list) -> None:
 
     # Make sure output folders exists
     img_folder = folder / 'images'
@@ -106,6 +115,9 @@ def save_images(folder: Path, ori_name: str, img_list: list, msk_list: list, suf
 
     for idx in range(len(img_list)):
         new_name = ori_name.split('.')[0] + '_' + suffix_lst[idx] + '.png'
+
+        img_list[idx] = cv.resize(img_list[idx], (out_size, out_size))
+        msk_list[idx] = cv.resize(msk_list[idx], (out_size, out_size))
 
         cv.imwrite(str(img_folder / new_name), img_list[idx])
         cv.imwrite(str(msk_folder / new_name), msk_list[idx])
@@ -120,8 +132,8 @@ def main():
 
     for idx in tqdm(range(len(img_path_list))):
 
-        image = load_image(img_path_list[idx], config.size)
-        mask = load_image(mask_path_list[idx], config.size)
+        image = load_image(img_path_list[idx])
+        mask = load_image(mask_path_list[idx])
 
         img_aug_lst, msk_aug_lst, suffix_lst = augmentation_pipeline(image, mask)
 
@@ -129,6 +141,7 @@ def main():
                     img_path_list[idx].name,
                     img_aug_lst,
                     msk_aug_lst,
+                    config.size,
                     suffix_lst)
 
 

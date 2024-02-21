@@ -1,11 +1,24 @@
 import albumentations as A
 
 
+# Output size for transforms that changes the size of the image
+SIZE = 512
+
 # Mask AGNOSTIC augmentantions
 
 def bright_contrast(image):
     transform = A.Compose([
         A.RandomBrightnessContrast(p=1.0)
+        ])
+
+    transformed = transform(image=image)
+    aug_image = transformed["image"]
+
+    return aug_image
+
+
+def rdn_blur(image):
+    transform = A.Compose([
         ])
 
     transformed = transform(image=image)
@@ -85,13 +98,16 @@ def h_flip(image, mask):
     aug_image = transformed["image"]
     aug_mask = transformed["mask"]
 
-    # aug_image = np.concatenate((image, aug_image), axis=1)
-    # aug_mask = np.concatenate((mask, aug_mask), axis=1)
-    # colation = np.concatenate((aug_image, aug_mask), axis=0)
+    return aug_image, aug_mask
 
-    # print(aug_image.shape, aug_mask.shape)
 
-    # plt.imshow(colation)
-    # plt.show()
+def rdn_crop(image, mask):
+    transform = A.Compose([
+        A.RandomCrop(width=512, height=512)
+        ])
+
+    transformed = transform(image=image, mask=mask)
+    aug_image = transformed["image"]
+    aug_mask = transformed["mask"]
 
     return aug_image, aug_mask
