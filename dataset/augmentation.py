@@ -1,191 +1,136 @@
-import os
-import cv2 as cv
+import argparse
+from pathlib import Path
+from tqdm import tqdm
 import numpy as np
+import cv2 as cv
 import albumentations as A
-import matplotlib.pyplot as plt
+import aug_list
 
 
-IMG_DIR = '/home/leite/Workspace/deep_learning/db/sartorius/train/images/'
-MSK_DIR = '/home/leite/Workspace/deep_learning/db/sartorius/train/masks/'
+def arg_parse() -> argparse.Namespace:
+    '''
+    Argument parser
+    '''
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--input', type=str, required=True,
+                        help='Folder with all the input images.')
+    parser.add_argument('--m_input', type=str, required=True,
+                        help='Folder with all the corresponding mask images.')
+    parser.add_argument('--output', type=str, required=True,
+                        help='Folder to save all the augmented images. Original input is also saved.')
+    parser.add_argument('--size', type=int, required=True,
+                        help='Size of the output image. A size of 256 means an output of 256x256 pixels.')
+
+    return parser.parse_args()
 
 
-def bright_contrast(image, mask):
-    transform = A.Compose([
-        A.RandomBrightnessContrast(p=1.0)
-        ])
+def load_image(img_path: Path, size: int) -> np.ndarray:
+    '''
+    Returns image loaded from img_path, also resizes to size. If
+    load fails, returns black image.
+    '''
 
-    transformed = transform(image=image)
-    aug_image = transformed["image"]
+    image = cv.imread(str(img_path))
 
-    return aug_image, mask
+    if image is None:
+        image = np.zeros((size, size), dtype='uint8')
 
-
-def rotate90(image, mask):
-    transform = A.Compose([
-        A.RandomRotate90(p=1.0)
-        ])
-
-    transformed = transform(image=image, mask=mask)
-    aug_image = transformed["image"]
-    aug_mask = transformed["mask"]
-
-    return aug_image, aug_mask
+    return image
 
 
-def perspective(image, mask):
-    transform = A.Compose([
-        A.Perspective(keep_size=True, p=1.0)
-        ])
+def augmentation_pipeline(image: np.ndarray, mask: np.ndarray) -> tuple:
+    '''
+    Returns three lists. One with the original images and its
+    augmentations, a second one with the original maks and its
+    augmentations, and the third one with the suffixes to be used
+    when saving these files.
+    '''
 
-    transformed = transform(image=image, mask=mask)
-    aug_image = transformed["image"]
-    aug_mask = transformed["mask"]
+    img_aug_lst = [image]
+    msk_aug_lst = [mask]
+    suffix_lst = ['']
 
-    return aug_image, aug_mask
+    # Mask AGNOSTIC augmentantions
 
+    img = aug_list.bright_contrast(image)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(mask)
+    suffix_lst.append('BGT')
 
-def optical_distortion(image, mask):
-    transform = A.Compose([
-        A.OpticalDistortion(p=1.0)
-        ])
+    # Mask SENSITIVE augmentations
 
-    transformed = transform(image=image, mask=mask)
-    aug_image = transformed["image"]
-    aug_mask = transformed["mask"]
+    img, msk = aug_list.rotate90(image, mask)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(msk)
+    suffix_lst.append('90ROT')
 
-    return aug_image, aug_mask
+    img, msk = aug_list.perspective(image, mask)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(msk)
+    suffix_lst.append('PERSP')
 
+    img, msk = aug_list.optical_distortion(image, mask)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(msk)
+    suffix_lst.append('OPT')
 
-def piece_affine(image, mask):
-    transform = A.Compose([
-        A.PiecewiseAffine(p=1.0)
-        ])
+    img, msk = aug_list.piece_affine(image, mask)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(msk)
+    suffix_lst.append('AFF')
 
-    transformed = transform(image=image, mask=mask)
-    aug_image = transformed["image"]
-    aug_mask = transformed["mask"]
+    img, msk = aug_list.v_flip(image, mask)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(msk)
+    suffix_lst.append('VFLIP')
 
-    return aug_image, aug_mask
-
-
-def v_flip(image, mask):
-    transform = A.Compose([
-        A.VerticalFlip(p=1.0)
-        ])
-
-    transformed = transform(image=image, mask=mask)
-    aug_image = transformed["image"]
-    aug_mask = transformed["mask"]
-
-    return aug_image, aug_mask
-
-
-def h_flip(image, mask):
-    transform = A.Compose([
-        A.HorizontalFlip(p=1.0)
-        ])
-
-    transformed = transform(image=image, mask=mask)
-    aug_image = transformed["image"]
-    aug_mask = transformed["mask"]
-
-    # aug_image = np.concatenate((image, aug_image), axis=1)
-    # aug_mask = np.concatenate((mask, aug_mask), axis=1)
-    # colation = np.concatenate((aug_image, aug_mask), axis=0)
-
-    # print(aug_image.shape, aug_mask.shape)
-
-    # plt.imshow(colation)
-    # plt.show()
-
-    return aug_image, aug_mask
+    img, msk = aug_list.h_flip(image, mask)
+    img_aug_lst.append(img)
+    msk_aug_lst.append(msk)
+    suffix_lst.append('HFLIP')
 
 
-def dummy(image, mask):
-    transform = A.Compose([
-        A.Affine(p=1.0)
-        ])
-
-    transformed = transform(image=image, mask=mask)
-    aug_image = transformed["image"]
-    aug_mask = transformed["mask"]
-
-    aug_image = np.concatenate((image, aug_image), axis=1)
-    aug_mask = np.concatenate((mask, aug_mask), axis=1)
-    colation = np.concatenate((aug_image, aug_mask), axis=0)
-
-    # print(aug_image.shape, aug_mask.shape)
-
-    plt.imshow(colation)
-    plt.show()
-
-    return aug_image, aug_mask
+    return img_aug_lst, msk_aug_lst, suffix_lst
 
 
-def augment(image_file):
-    aug_list = ['h_flip', 'v_flip', 'piecewise_affine', 'optical_distortion', 'perspective', 'rotate90', 'bright_contrast']
-    aug_img = None
-    aug_msk = None
+def save_images(folder: Path, ori_name: str, img_list: list, msk_list: list, suffix_lst: list) -> None:
 
-    img = cv.imread(os.path.join(IMG_DIR, image_file), 0)
-    msk = cv.imread(os.path.join(MSK_DIR, image_file), 0)
+    # Make sure output folders exists
+    img_folder = folder / 'images'
+    msk_folder = folder / 'masks/0'
 
-    img = cv.resize(img, (224,224))
-    msk = cv.resize(msk, (224,224))
+    img_folder.mkdir(parents=True, exist_ok=True)
+    msk_folder.mkdir(parents=True, exist_ok=True)
 
-    for aug in aug_list:
-        new_file_name = image_file.split('.')[0]
+    for idx in range(len(img_list)):
+        new_name = ori_name.split('.')[0] + '_' + suffix_lst[idx] + '.png'
 
-        if aug == 'h_flip':
-            new_file_name = new_file_name + '_' + aug + '.png'
-            aug_img, aug_msk = h_flip(img, msk)
-
-        elif aug == 'v_flip':
-            new_file_name = new_file_name + '_' + aug + '.png'
-            aug_img, aug_msk = v_flip(img, msk)
-
-        elif aug == 'piecewise_affine':
-            new_file_name = new_file_name + '_' + aug + '.png'
-            aug_img, aug_msk = piece_affine(img, msk)
-
-        elif aug == 'optical_distortion':
-            new_file_name = new_file_name + '_' + aug + '.png'
-            aug_img, aug_msk = optical_distortion(img, msk)
-
-        elif aug == 'perspective':
-            new_file_name = new_file_name + '_' + aug + '.png'
-            aug_img, aug_msk = perspective(img, msk)
-
-        elif aug == 'rotate90':
-            new_file_name = new_file_name + '_' + aug + '.png'
-            aug_img, aug_msk = rotate90(img, msk)
-
-        elif aug == 'bright_contrast':
-            new_file_name = new_file_name + '_' + aug + '.png'
-            aug_img, aug_msk = bright_contrast(img, msk)
-
-        else:
-            new_file_name = new_file_name + '_' + aug + '.png'
-            aug_img, aug_msk = dummy(img, msk)
-
-        # print(os.path.join(IMG_DIR + new_file_name))
-        # print(os.path.join(MSK_DIR + new_file_name))
-        print(new_file_name)
-
-        cv.imwrite(os.path.join(IMG_DIR, new_file_name), aug_img)
-        cv.imwrite(os.path.join(MSK_DIR, new_file_name), aug_msk)
+        cv.imwrite(str(img_folder / new_name), img_list[idx])
+        cv.imwrite(str(msk_folder / new_name), msk_list[idx])
 
 
 def main():
-    file_list = os.listdir(IMG_DIR)
-    file_list.sort()
 
-    for img in file_list:
-        # print('bef:', len(file_list))
-        augment(img)
-        # print('aft:', len(file_list))
+    config = arg_parse()
 
-    return
+    img_path_list = sorted(Path(config.input).glob('*'))
+    mask_path_list = sorted(Path(config.m_input).glob('*'))
+
+    for idx in tqdm(range(len(img_path_list))):
+
+        image = load_image(img_path_list[idx], config.size)
+        mask = load_image(mask_path_list[idx], config.size)
+
+        img_aug_lst, msk_aug_lst, suffix_lst = augmentation_pipeline(image, mask)
+
+        save_images(Path(config.output),
+                    img_path_list[idx].name,
+                    img_aug_lst,
+                    msk_aug_lst,
+                    suffix_lst)
 
 
-main()
+if __name__ == '__main__':
+    main()

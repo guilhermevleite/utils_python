@@ -19,6 +19,8 @@ def arg_parse():
             help='String to be removed from the filename.')
     parser.add_argument('--numberfy', type=bool, default=False,
             help='Rename all files into sorted numbers. (001.png, 002.png, ..., 099.png)')
+    parser.add_argument('--lower', type=bool, default=False,
+            help='Change all names to lower case')
 
     return parser.parse_args()
 
@@ -27,12 +29,14 @@ def remove_pattern(path, f_list, pattern, debug=False):
 
     for f in f_list:
 
+        print(os.path.join(path, f))
         new_name = f.replace(pattern, '')
         print(os.path.join(path, new_name))
+        print()
 
         if not debug:
             os.rename(os.path.join(path, f),
-                    os.path.join(path, new_name))
+                os.path.join(path, new_name))
 
 
 def numberfy(path, f_list, debug=False):
@@ -62,6 +66,17 @@ def numberfy(path, f_list, debug=False):
         i += 1
 
 
+def lower_case(path, f_list):
+    ''' Rename all files into the same name, however, lower case.
+    '''
+
+    for f in f_list:
+        new_name = f.lower()
+
+        os.rename(os.path.join(path, f),
+                  os.path.join(path, new_name))
+
+
 def main():
 
     args = arg_parse()
@@ -74,6 +89,12 @@ def main():
 
     if args.numberfy:
         numberfy(args.input, f_list)
+
+    f_list = os.listdir(args.input)
+    f_list.sort()
+
+    if args.lower:
+        lower_case(args.input, f_list)
 
 
 if __name__ == '__main__':
