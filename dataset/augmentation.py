@@ -50,7 +50,7 @@ def augmentation_pipeline(image: np.ndarray, mask: np.ndarray) -> tuple:
 
     img_aug_lst = [image]
     msk_aug_lst = [mask]
-    suffix_lst = ['']
+    suffix_lst = ['ORI']
 
     # Mask AGNOSTIC augmentantions
 
