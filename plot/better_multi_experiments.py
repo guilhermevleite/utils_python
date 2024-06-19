@@ -1,8 +1,8 @@
 import argparse
 from pathlib import Path
 import pandas as pd
-import matplotlib.pyplot as PLT
-import seaborn as SBN
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 config = {}
@@ -46,8 +46,13 @@ if __name__ == "__main__":
             adapt_df(output, experiment, idx)
             print(len(output), len(output.columns))
             print()
-            output_df = output_df.append(output, ignore_index=True)
+            output_df = pd.concat([output_df, output])
             print('aapend', len(output_df))
 
-    print(output_df)
-    output_df.to_csv('aqui.csv')
+    sns.set_theme(style="darkgrid")
+    sns.lineplot(x='epoch', y='val_dice', hue='experiment', data=output_df)
+    plt.ylim([0.85, 1.0])
+    plt.show()
+
+    # print(output_df)
+    # output_df.to_csv('aqui.csv')
