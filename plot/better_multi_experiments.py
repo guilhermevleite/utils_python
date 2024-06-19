@@ -24,26 +24,30 @@ def arg_parse():
 
 
 def adapt_df(df, exp_name, replica):
-    df.insert(-1, 'experiment', exp_name, True)
-    df.insert(-1, 'replica', replica, True)
+    df.insert(len(df.columns), 'experiment', exp_name, True)
+    df.insert(len(df.columns), 'replica', replica, True)
 
 
 if __name__ == "__main__":
 
     args = arg_parse()
 
-    for experiment in config['sub_strings']:
+    output_df = pd.DataFrame()
 
+    for experiment in config['sub_strings']:
         print(f'Gathering information about {experiment}')
         replicates = Path(args.input_path).glob(f'{experiment}*')
-        result_list = []
 
         for idx, replica in enumerate(replicates):
 
             csv = pd.read_csv(Path(replica) / 'log.csv')
             output = csv[['epoch', 'val_dice']]
-            adapt_df(csv, experiment, idx)
-            result_list.append(output)
+            print(len(output), len(output.columns))
+            adapt_df(output, experiment, idx)
+            print(len(output), len(output.columns))
+            print()
+            output_df = output_df.append(output, ignore_index=True)
+            print('aapend', len(output_df))
 
-        print(len(result_list))
-        print(result_list)
+    print(output_df)
+    output_df.to_csv('aqui.csv')
