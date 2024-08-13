@@ -22,6 +22,8 @@ def arg_parse() -> argparse.Namespace:
                         help='Folder to save all the augmented images. Original input is also saved.')
     parser.add_argument('--size', type=int, required=True,
                         help='Size of the output image. A size of 256 means an output of 256x256 pixels.')
+    parser.add_argument('--patch', type=bool, default=False,
+                        help='Whether each image will be patched into 4 patches.')
 
     return parser.parse_args()
 
@@ -104,7 +106,7 @@ def augmentation_pipeline(image: np.ndarray, mask: np.ndarray) -> tuple:
     return img_aug_lst, msk_aug_lst, suffix_lst
 
 
-def save_images(folder: Path, ori_name: str, img_list: list, msk_list: list, out_size: int, suffix_lst: list) -> None:
+def save_images(folder: Path, sub_index: int, ori_name: str, img_list: list, msk_list: list, out_size: int, suffix_lst: list) -> None:
 
     # Make sure output folders exists
     img_folder = folder / 'images'
@@ -114,10 +116,11 @@ def save_images(folder: Path, ori_name: str, img_list: list, msk_list: list, out
     msk_folder.mkdir(parents=True, exist_ok=True)
 
     for idx in range(len(img_list)):
-        new_name = ori_name.split('.')[0] + '_' + suffix_lst[idx] + '.png'
+        new_name = ori_name.split('.')[0] + '_' + str(sub_index) + '_' + suffix_lst[idx] + '.png'
+        print(new_name)
 
-        img_list[idx] = cv.resize(img_list[idx], (out_size, out_size))
-        msk_list[idx] = cv.resize(msk_list[idx], (out_size, out_size))
+        # img_list[idx] = cv.resize(img_list[idx], (out_size, out_size))
+        # msk_list[idx] = cv.resize(msk_list[idx], (out_size, out_size))
 
         cv.imwrite(str(img_folder / new_name), img_list[idx])
         cv.imwrite(str(msk_folder / new_name), msk_list[idx])
@@ -135,14 +138,31 @@ def main():
         image = load_image(img_path_list[idx])
         mask = load_image(mask_path_list[idx])
 
-        img_aug_lst, msk_aug_lst, suffix_lst = augmentation_pipeline(image, mask)
+        img_aug_lst, msk_aug_lst, suffix_lst = ([], [], [])
 
-        save_images(Path(config.output),
-                    img_path_list[idx].name,
-                    img_aug_lst,
-                    msk_aug_lst,
-                    config.size,
-                    suffix_lst)
+        if config.patch:
+            for i, (img, msk) in enumerate(aug_list.patching(image, mask)):
+                # print(img_path_list[idx].name)
+                img_aug_lst, msk_aug_lst, suffix_lst = augmentation_pipeline(img, msk)
+
+                # print(len(img_aug_lst))
+                save_images(Path(config.output),
+                            i,
+                            img_path_list[idx].name,
+                            img_aug_lst,
+                            msk_aug_lst,
+                            config.size,
+                            suffix_lst)
+        else:
+            img_aug_lst, msk_aug_lst, suffix_lst = augmentation_pipeline(image, mask)
+
+            save_images(Path(config.output),
+                        0,
+                        img_path_list[idx].name,
+                        img_aug_lst,
+                        msk_aug_lst,
+                        config.size,
+                        suffix_lst)
 
 
 if __name__ == '__main__':

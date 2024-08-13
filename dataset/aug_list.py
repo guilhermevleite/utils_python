@@ -1,8 +1,52 @@
 import albumentations as A
+import cv2 as cv
 
 
-# Output size for transforms that changes the size of the image
-SIZE = 512
+# Patching image
+
+# TODO : Currently only does 4 patches
+def patching(image, mask):
+
+    img_tuple_lst = []
+    height, width, _ = image.shape
+
+    # north west
+    tmp_img = image[:height//2, :width//2]
+    tmp_msk = mask[:height//2, :width//2]
+
+    tmp_img = cv.resize(tmp_img, (height//2, width//2))
+    tmp_msk = cv.resize(tmp_msk, (height//2, width//2))
+
+    img_tuple_lst.append((tmp_img, tmp_msk))
+
+    # north east
+    tmp_img = image[:height//2, width//2:]
+    tmp_msk = mask[:height//2, width//2:]
+
+    tmp_img = cv.resize(tmp_img, (height//2, width//2))
+    tmp_msk = cv.resize(tmp_msk, (height//2, width//2))
+
+    img_tuple_lst.append((tmp_img, tmp_msk))
+
+    # south west
+    tmp_img = image[height//2:, :width//2]
+    tmp_msk = mask[height//2:, :width//2]
+
+    tmp_img = cv.resize(tmp_img, (height//2, width//2))
+    tmp_msk = cv.resize(tmp_msk, (height//2, width//2))
+
+    img_tuple_lst.append((tmp_img, tmp_msk))
+
+    # south east
+    tmp_img = image[height//2:, width//2:]
+    tmp_msk = mask[height//2:, width//2:]
+
+    tmp_img = cv.resize(tmp_img, (height//2, width//2))
+    tmp_msk = cv.resize(tmp_msk, (height//2, width//2))
+
+    img_tuple_lst.append((tmp_img, tmp_msk))
+
+    return img_tuple_lst
 
 # Mask AGNOSTIC augmentantions
 

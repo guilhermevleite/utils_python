@@ -1,0 +1,1 @@
+python3 augmentation.py --input /home/leite/workspace/.datasets/segmentation/delete_later/images --m_input /home/leite/workspace/.datasets/segmentation/delete_later/masks/0 --output /home/leite/workspace/.datasets/segmentation/delete_later_2 --patch True
