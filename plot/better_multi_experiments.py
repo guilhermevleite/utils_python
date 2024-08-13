@@ -7,9 +7,29 @@ import seaborn as sns
 
 config = {}
 config['sub_strings'] = [
-    'ours__GPT-test_aug-none_GPTNet',
-    'ours__GPT-test_aug-none_Unet'
+    # 'manual_lacalle_manual_AUG_GPTNet',
+    # 'manual_lacalle_manual_AUG_MultiResUnet',
+    # 'manual_lacalle_manual_AUG_TransUnet',
+    # 'manual_lacalle_manual_AUG_UnetPP',
+    # 'swin_unet_lacalle_manual_AUG_SwinUnet',
+    # 'manual_lacalle_manual_AUG_Unext',
+    # 'manual_lacalle_manual_AUG_Unet',
+    # 'spheroidj_lacalle_spheroidj_AUG_GPTNet',
+    # 'spheroidj_lacalle_spheroidj_AUG_MultiResUnet',
+    # 'spheroidj_lacalle_spheroidj_AUG_TransUnet',
+    # 'spheroidj_lacalle_spheroidj_AUG_UnetPP',
+    # 'swin_unet_lacalle_spheroidj_AUG_SwinUnet',
+    # 'spheroidj_lacalle_spheroidj_AUG_Unext',
+    # 'spheroidj_lacalle_spheroidj_AUG_Unet',
+    'spheroid_ours_ALL_GPTNet',
+    'spheroid_ours_ALL_MultiResUnet',
+    'spheroid_ours_ALL_TransUnet',
+    'spheroid_ours_ALL_UnetPP',
+    'spheroid_ours_ALL_Unext',
+    'spheroid_ours_ALL_Unet',
+    'swin_unet_ours_ALL_SwinUnet',
 ]
+
 
 def arg_parse():
     parser = argparse.ArgumentParser()
@@ -24,6 +44,8 @@ def arg_parse():
 
 
 def adapt_df(df, exp_name, replica):
+    print(exp_name)
+    exp_name = exp_name.split('_')[-1]
     df.insert(len(df.columns), 'experiment', exp_name, True)
     df.insert(len(df.columns), 'replica', replica, True)
 
@@ -37,22 +59,23 @@ if __name__ == "__main__":
     for experiment in config['sub_strings']:
         print(f'Gathering information about {experiment}')
         replicates = Path(args.input_path).glob(f'{experiment}*')
+        print(experiment + "*")
 
         for idx, replica in enumerate(replicates):
 
             csv = pd.read_csv(Path(replica) / 'log.csv')
             output = csv[['epoch', 'val_dice']]
-            print(len(output), len(output.columns))
             adapt_df(output, experiment, idx)
             print(len(output), len(output.columns))
-            print()
+            # print()
             output_df = pd.concat([output_df, output])
-            print('aapend', len(output_df))
+            # print('append', len(output_df))
 
+    print(output_df.head)
     sns.set_theme(style="darkgrid")
     sns.lineplot(x='epoch', y='val_dice', hue='experiment', data=output_df)
     plt.ylim([0.85, 1.0])
     plt.show()
 
     # print(output_df)
-    # output_df.to_csv('aqui.csv')
+    output_df.to_csv('aqui.csv')
