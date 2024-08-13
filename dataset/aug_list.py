@@ -1,4 +1,5 @@
 import albumentations as A
+import cv2 as cv
 
 
 # Output size for transforms that changes the size of the image
@@ -34,7 +35,10 @@ def rotate90(image, mask):
         A.RandomRotate90(p=1.0)
         ])
 
-    transformed = transform(image=image, mask=mask)
+    _image = cv.resize(image, (SIZE, SIZE))
+    _mask = cv.resize(mask, (SIZE, SIZE))
+
+    transformed = transform(image=_image, mask=_mask)
     aug_image = transformed["image"]
     aug_mask = transformed["mask"]
 
@@ -93,8 +97,10 @@ def h_flip(image, mask):
     transform = A.Compose([
         A.HorizontalFlip(p=1.0)
         ])
+    _image = cv.resize(image, (SIZE, SIZE))
+    _mask = cv.resize(mask, (SIZE, SIZE))
 
-    transformed = transform(image=image, mask=mask)
+    transformed = transform(image=_image, mask=_mask)
     aug_image = transformed["image"]
     aug_mask = transformed["mask"]
 
@@ -103,10 +109,13 @@ def h_flip(image, mask):
 
 def rdn_crop(image, mask):
     transform = A.Compose([
-        A.RandomCrop(width=512, height=512)
+        A.RandomCrop(width=SIZE, height=SIZE)
         ])
 
-    transformed = transform(image=image, mask=mask)
+    _image = cv.resize(image, (SIZE, SIZE))
+    _mask = cv.resize(mask, (SIZE, SIZE))
+
+    transformed = transform(image=_image, mask=_mask)
     aug_image = transformed["image"]
     aug_mask = transformed["mask"]
 
